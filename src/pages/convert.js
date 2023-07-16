@@ -50,20 +50,18 @@ function Convert() {
     replacedText = replacedText.replace(inlineCodeRegex, "\\lstinline{$1}");
     replacedText = replacedText.replace(imageRegex, function (match, p1) {
       return `
-  \\begin{figure}[h]
-    \\centering
-    \\includegraphics[width=0.6\\textwidth]{${p1}}
-    \\caption{Caption}
-    \\label{fig:${p1.replace(/\s/g, "_")}}
-  \\end{figure}
+\\begin{figure}[h]
+  \\centering
+  \\includegraphics[width=0.6\\textwidth]{${p1}}
+  \\caption{Caption}
+  \\label{fig:${p1.replace(/\s/g, "_")}}
+\\end{figure}
   `;
     });
 
     replacedText = replacedText.replace(codeBlockRegex, function (match, p1) {
       return `
-  \\begin{lstlisting}[language=python, caption={caption here}]
-  ${p1}
-  \\end{lstlisting}
+\\begin{lstlisting}[language=python, caption={caption here}]${p1}\\end{lstlisting}
   `;
     });
 
