@@ -2,30 +2,52 @@ import { useState } from "react";
 
 function Convert() {
   const [originalText, setOriginalText] = useState("");
-
   const [displayText, setDisplayText] = useState("");
 
   const handleButtonClick = () => {
     const headerOneRegex = /^#{1}\s(.*)/gm; // h1
+
     const headerTwoRegex = /^#{2}\s(.*)/gm; // h2
+
     const headerThreeRegex = /^#{3}\s(.*)/gm; // h3
 
     const imageRegex = /!\[\[(.*?)\]\]/g;
-    const codeBlockRegex = /```([^`]+)```/gs;
-    const inlineCodeRegex = /`([^`]+)`/g;
-    const boldItalicRegex = /\*\*\*(.*?)\*\*\*/g;
-    const boldRegex = /\*\*(.*?)\*\*/g;
-    const italicRegex = /\*(.*?)\*/g;
+
+    const codeBlockRegex = /```([^`]+)```/g;
+
+    const inlineCodeRegex = /`([^`\n]+)`/g;
     // const specialCharRegex = /(?<![{}])[_&](?![{}])/g; // TODO:  fix this some time so that it doesn't escape things within codeblocks
+
+    const boldItalicRegex = /\*\*\*(.*?)\*\*\*/g;
+
+    const boldRegex = /\*\*(.*?)\*\*/g;
+
+    const italicRegex = /\*(.*?)\*/g;
+
     const linkRegex = /\[(.*?)\]\((.*?)\)/g;
 
     setOriginalText(displayText);
 
+    let isInCodeBlock = false;
     let replacedText = displayText
-      .replace(headerThreeRegex, "\\subsubsection{$1}")
-      .replace(headerTwoRegex, "\\subsection{$1}")
-      .replace(headerOneRegex, "\\section{$1}");
+      .split("\n")
+      .map((line) => {
+        if (line.startsWith("```")) {
+          isInCodeBlock = !isInCodeBlock;
+        }
 
+        if (!isInCodeBlock) {
+          line = line
+            .replace(headerOneRegex, "\\section*{$1}")
+            .replace(headerTwoRegex, "\\subsection*{$1}")
+            .replace(headerThreeRegex, "\\subsubsection*{$1}");
+        }
+
+        return line;
+      })
+      .join("\n");
+
+    replacedText = replacedText.replace(inlineCodeRegex, "\\lstinline{$1}");
     replacedText = replacedText.replace(imageRegex, function (match, p1) {
       return `
   \\begin{figure}[h]
@@ -39,23 +61,16 @@ function Convert() {
 
     replacedText = replacedText.replace(codeBlockRegex, function (match, p1) {
       return `
-  \\begin{lstlisting}[language=C, caption={caption here}]
+  \\begin{lstlisting}[language=python, caption={caption here}]
   ${p1}
   \\end{lstlisting}
   `;
     });
 
-    replacedText = replacedText.replace(inlineCodeRegex, "\\lstinline{$1}");
-
-    // Ensure bold-italic is replaced before bold and italic
     replacedText = replacedText.replace(boldItalicRegex, "\\textbf{\\textit{$1}}");
     replacedText = replacedText.replace(boldRegex, "\\textbf{$1}");
     replacedText = replacedText.replace(italicRegex, "\\textit{$1}");
 
-    // Replace underscores and ampersands not enclosed in curly braces
-    // replacedText = replacedText.replace(specialCharRegex, "\\$&");
-
-    // Replace markdown links with LaTeX \href{}{}
     replacedText = replacedText.replace(linkRegex, "\\href{$2}{$1}");
 
     setDisplayText(replacedText);
@@ -68,7 +83,6 @@ function Convert() {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(displayText);
   };
-
   return (
     <div className="min-h-screen min-w-screen flex items-center justify-center flex-col">
       <textarea
